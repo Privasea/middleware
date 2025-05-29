@@ -19,13 +19,14 @@ func GinInterceptor(ctx *gin.Context, mockAuth Auth) {
 	if utils.PathContainsKey(ctx.Request.URL.Path, "admin") {
 		userToken := ctx.GetHeader("sign_data")
 		apiServerName := ctx.GetHeader("server_name")
+		address := ctx.GetHeader("address")
 		apiMethod := ctx.Request.Method
 		apiPath := ctx.Request.URL.Path
 		algorithmAuth := newAuth("admin")
 		if mockAuth != nil {
 			algorithmAuth = mockAuth
 		}
-		flag, err := algorithmAuth.Check(userToken, apiServerName, apiMethod, apiPath)
+		flag, err := algorithmAuth.Check(userToken, apiServerName, apiMethod, apiPath, address)
 		if err != nil {
 			ctx.JSON(http.StatusOK, map[string]interface{}{
 				"code":  300500,

@@ -9,26 +9,28 @@ import (
 type AdminAuth struct {
 }
 
-func (a AdminAuth) Check(userToken string, apiServerName string, apiMethod string, apiPath string) (bool, error) {
-	flag, err := getApiDataForAdmin(apiServerName, apiPath, apiMethod, userToken)
+func (a AdminAuth) Check(userToken string, apiServerName string, apiMethod string, apiPath string, address string) (bool, error) {
+	flag, err := getApiDataForAdmin(apiServerName, apiPath, apiMethod, userToken, address)
 	if err != nil {
 		return false, err
 	}
 	return flag, nil
 }
 
-func getApiDataForAdmin(server, path, method, userToken string) (bool, error) {
+func getApiDataForAdmin(server, path, method, userToken, address string) (bool, error) {
 
-	client := utils.NewClient("http://exception-service:5000/api/v1/inner_use")
+	//client := utils.NewClient("http://exception-service:5000/api/v1/inner_use")
+	client := utils.NewClient("https://api-dev.privasea.ai/cloud-plat/api/v1/inner_use")
 
 	req := getApiDataForAdminRequestData{
-		Server:     server,
-		Path:       path,
-		Method:     method,
-		WalletSign: userToken,
+		ServiceName: server,
+		Path:        path,
+		Method:      method,
+		SignData:    userToken,
+		Address:     address,
 	}
 
-	postResponse, err := client.Post("/admin/check", req)
+	postResponse, err := client.Post("/user/user_permission", req)
 	if err != nil {
 		return false, err
 	}
@@ -42,16 +44,15 @@ func getApiDataForAdmin(server, path, method, userToken string) (bool, error) {
 	if response.Code != 0 {
 		return false, errors.New(response.Msg)
 	}
-	return response.Data.Pass, nil
-
-	return false, nil
+	return response.Data.Permission, nil
 }
 
 type getApiDataForAdminRequestData struct {
-	Server     string `json:"server"`
-	Path       string `json:"path"`
-	Method     string `json:"method"`
-	WalletSign string `json:"walletSign"`
+	ServiceName string `json:"service_name"`
+	Path        string `json:"path"`
+	Method      string `json:"method"`
+	SignData    string `json:"sign_data"`
+	Address     string `json:"address"`
 }
 
 // Response 定义了响应的结构体
@@ -61,5 +62,5 @@ type getApiDataForAdminResponse struct {
 	Msg  string `json:"msg"`  // 错误消息或成功消息
 }
 type data struct {
-	Pass bool `json:"pass"`
+	Permission bool `json:"permission"`
 }
