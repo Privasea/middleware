@@ -19,8 +19,8 @@ func (a AdminAuth) Check(userToken string, apiServerName string, apiMethod strin
 
 func getApiDataForAdmin(server, path, method, userToken, address string) (bool, error) {
 
-	//client := utils.NewClient("http://exception-service:5000/api/v1/inner_use")
-	client := utils.NewClient("https://api-dev.privasea.ai/cloud-plat/api/v1/inner_use")
+	client := utils.NewClient("http://exception-service:5000/api/v1/inner_use")
+	//client := utils.NewClient("https://api-dev.privasea.ai/cloud-plat/api/v1/inner_use")
 
 	req := getApiDataForAdminRequestData{
 		ServiceName: server,
