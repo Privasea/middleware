@@ -14,14 +14,18 @@ func newAuth(algorithm string) Auth {
 		return nil
 	}
 }
-func GinInterceptor(ctx *gin.Context) {
+func GinInterceptor(ctx *gin.Context, mockAuth Auth) {
 
 	if utils.PathContainsKey(ctx.Request.URL.Path, "admin") {
 		userToken := ctx.GetHeader("sign_data")
 		apiServerName := ctx.GetHeader("server_name")
 		apiMethod := ctx.Request.Method
 		apiPath := ctx.Request.URL.Path
-		flag, err := newAuth("admin").Check(userToken, apiServerName, apiMethod, apiPath)
+		algorithmAuth := newAuth("admin")
+		if mockAuth != nil {
+			algorithmAuth = mockAuth
+		}
+		flag, err := algorithmAuth.Check(userToken, apiServerName, apiMethod, apiPath)
 		if err != nil {
 			ctx.JSON(http.StatusOK, map[string]interface{}{
 				"code":  300500,
