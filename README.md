@@ -14,5 +14,5 @@ import "github.com/Privasea/middleware"
 ```
 // 新增auth.GinInterceptor中间件（放在tl.GinInterceptor后面）
 r.Use(tl.GinInterceptor)
-r.Use(auth.GinInterceptor,nil)
+r.Use(auth.GinInterceptor())
 ```
