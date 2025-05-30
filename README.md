@@ -16,3 +16,11 @@ import "github.com/Privasea/middleware"
 r.Use(tl.GinInterceptor)
 r.Use(auth.GinInterceptor())
 ```
+### cors包,跨域
+#### 添加gin的全局中间件
+```
+// 新增cors.CORSMiddleware中间件（放在tl.GinInterceptor前面）
+r.Use(cors.CORSMiddleware())
+r.Use(tl.GinInterceptor)
+r.Use(auth.GinInterceptor())
+```
