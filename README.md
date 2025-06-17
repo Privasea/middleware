@@ -31,7 +31,7 @@ r.Use(auth.GinInterceptor())
 //rateLimit窗口时间访问次数
 //rateLimitTTL窗口时间，比如 60*time.Second 60s
 //rdb github.com/go-redis/redis/v8 redis实例
-r.Use(limit.NewRateLimitMiddleware(rateLimit, rateLimitTTL, rdb))
+r.Use(limit.NewRateLimit(rateLimit, rateLimitTTL, rdb))
 
 //同ip单个接口访问限制，可用作防重复点击，用于接口层中间件
 ex:
