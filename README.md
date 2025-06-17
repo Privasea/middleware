@@ -27,6 +27,8 @@ r.Use(auth.GinInterceptor())
 ### limit包,限流
 #### 添加gin的全局中间件
 ```
+//注意内部调用的接口不会限流
+//目前内部接口为path包含/inner_use/或者/job/则判定为内部接口
 //同ip整站访问限制
 //rateLimit窗口时间访问次数
 //rateLimitTTL窗口时间，比如 60*time.Second 60s

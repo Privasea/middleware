@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -36,19 +37,23 @@ func newRateLimitMiddleware(rateLimit int, rateLimitTTL time.Duration, redisClie
 
 	return func(c *gin.Context) {
 		// 获取客户端 IP 或用户 ID 作为 key
-		clientIP := c.ClientIP()
-		key := redisKey
-		// 生成 Redis 键名
-		if redisKey == "" {
-			key = fmt.Sprintf("rate_limit:%s", clientIP)
-		} else {
-			path := c.Request.URL.Path
-			method := c.Request.Method
-			key = fmt.Sprintf("rate_limit_api:%s:%s:%s", clientIP, path, method)
-		}
+		path := c.Request.URL.Path
 
-		// 使用 Lua 脚本保证计数器操作是原子性的
-		luaScript := `
+		if !strings.Contains(path, "/job/") && !strings.Contains(path, "/inner_use/") {
+
+			clientIP := c.ClientIP()
+			key := redisKey
+			// 生成 Redis 键名
+			if redisKey == "" {
+				key = fmt.Sprintf("rate_limit:%s", clientIP)
+			} else {
+
+				method := c.Request.Method
+				key = fmt.Sprintf("rate_limit_api:%s:%s:%s", clientIP, path, method)
+			}
+
+			// 使用 Lua 脚本保证计数器操作是原子性的
+			luaScript := `
 			local current
 			current = redis.call('GET', KEYS[1])
 			if current then
@@ -63,32 +68,33 @@ func newRateLimitMiddleware(rateLimit int, rateLimitTTL time.Duration, redisClie
 			return current
 		`
 
-		// 执行 Lua 脚本，返回值为当前请求次数
-		result, err := rdb.Eval(ctx, luaScript, []string{key}, rateLimit, int(rateLimitTTL.Seconds())).Result()
-		if err != nil {
-			c.JSON(http.StatusOK, map[string]interface{}{
-				"code":  200500,
-				"msg":   "bad request",
-				"error": "Error checking rate limit",
-			})
-			c.Abort()
+			// 执行 Lua 脚本，返回值为当前请求次数
+			result, err := rdb.Eval(ctx, luaScript, []string{key}, rateLimit, int(rateLimitTTL.Seconds())).Result()
+			if err != nil {
+				c.JSON(http.StatusOK, map[string]interface{}{
+					"code":  200500,
+					"msg":   "bad request",
+					"error": "Error checking rate limit",
+				})
+				c.Abort()
 
-			return
+				return
+			}
+
+			// 如果返回值为 -1，则表示超过请求限制
+			if result == int64(-1) {
+				c.JSON(http.StatusOK, map[string]interface{}{
+					"code":  200429,
+					"msg":   "Too many requests, please try again later",
+					"error": "Too many requests, please try again later",
+				})
+				c.Abort()
+
+				return
+			}
+
+			// 继续执行请求
+			c.Next()
 		}
-
-		// 如果返回值为 -1，则表示超过请求限制
-		if result == int64(-1) {
-			c.JSON(http.StatusOK, map[string]interface{}{
-				"code":  200429,
-				"msg":   "Too many requests, please try again later",
-				"error": "Too many requests, please try again later",
-			})
-			c.Abort()
-
-			return
-		}
-
-		// 继续执行请求
-		c.Next()
 	}
 }
